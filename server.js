@@ -11,32 +11,46 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// ✅ Environment Validation
 if (!process.env.MONGO_URI) {
-  console.error("MongoDB URI is missing! Check your .env file.");
+  console.error(`[❌ ERROR] MongoDB URI is missing! Check your .env file.`);
   process.exit(1);
 }
 
+// ✅ MongoDB Connection with Improved Logging
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.error("MongoDB Connection Failed:", err));
+  .then(() => console.log(`[✅ SUCCESS] MongoDB Connected at ${new Date().toISOString()}`))
+  .catch(err => {
+    console.error(`[❌ ERROR] MongoDB Connection Failed: ${err.message}`);
+    process.exit(1); // Stops API if DB fails
+  });
 
 app.use("/metrics", metricsRoutes);
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`[🚀 SERVER] Running on port ${PORT} at ${new Date().toISOString()}`));
+
+// ✅ Health Check Route (for uptime monitoring)
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "✅ API Running",
+    database: mongoose.connection.readyState === 1 ? "Connected ✅" : "Disconnected ❌",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // ✅ WebSocket Server for Real-Time Tracking
 const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
-  console.log("New client connected");
+  console.log(`[🔗 CONNECTED] New WebSocket client at ${new Date().toISOString()}`);
 
   ws.on("message", (message) => {
-    console.log("Received:", message.toString());
+    console.log(`[📩 MESSAGE] Received: ${message.toString()} at ${new Date().toISOString()}`);
   });
 
   ws.on("close", () => {
-    console.log("Client disconnected");
+    console.log(`[🔌 DISCONNECTED] WebSocket client disconnected at ${new Date().toISOString()}`);
   });
 });
 
@@ -48,5 +62,11 @@ const broadcastUpdate = (data) => {
     }
   });
 };
+
+// ✅ Global Error Handler (Prevents API from crashing)
+app.use((err, req, res, next) => {
+  console.error(`[❌ GLOBAL ERROR] ${err.message} at ${new Date().toISOString()}`);
+  res.status(500).json({ error: "Internal Server Error" });
+});
 
 export { broadcastUpdate };
