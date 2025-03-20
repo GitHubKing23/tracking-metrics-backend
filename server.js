@@ -18,17 +18,20 @@ if (!process.env.MONGO_URI) {
 }
 
 // ✅ MongoDB Connection with Improved Logging
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log(`[✅ SUCCESS] MongoDB Connected at ${new Date().toISOString()}`))
-  .catch(err => {
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() =>
+    console.log(`[✅ SUCCESS] MongoDB Connected at ${new Date().toISOString()}`)
+  )
+  .catch((err) => {
     console.error(`[❌ ERROR] MongoDB Connection Failed: ${err.message}`);
     process.exit(1); // Stops API if DB fails
   });
 
 app.use("/metrics", metricsRoutes);
-
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => console.log(`[🚀 SERVER] Running on port ${PORT} at ${new Date().toISOString()}`));
 
 // ✅ Health Check Route (for uptime monitoring)
 app.get("/health", (req, res) => {
@@ -37,6 +40,12 @@ app.get("/health", (req, res) => {
     database: mongoose.connection.readyState === 1 ? "Connected ✅" : "Disconnected ❌",
     timestamp: new Date().toISOString(),
   });
+});
+
+// ✅ Bind Server to IPv4 (0.0.0.0) to Allow External Access
+const PORT = process.env.PORT || 5000;
+const server = app.listen(PORT, "0.0.0.0", () => {
+  console.log(`[🚀 SERVER] Running on http://0.0.0.0:${PORT} at ${new Date().toISOString()}`);
 });
 
 // ✅ WebSocket Server for Real-Time Tracking
