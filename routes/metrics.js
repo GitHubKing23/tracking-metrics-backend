@@ -43,7 +43,7 @@ router.post("/page-view", async (req, res) => {
     if (!page) return res.status(400).json({ error: "Page is required" });
 
     if (!sessionId) sessionId = uuidv4();
-    
+
     const userInfo = getUserInfo(req);
 
     const newEvent = new Event({
@@ -70,7 +70,7 @@ router.post("/article-read", async (req, res) => {
     if (!article || duration < 30) return res.status(400).json({ error: "Invalid article read" });
 
     if (!sessionId) sessionId = uuidv4();
-    
+
     const userInfo = getUserInfo(req);
 
     const newEvent = new Event({
@@ -97,7 +97,7 @@ router.post("/click", async (req, res) => {
     if (!clicked || !target) return res.status(400).json({ error: "Click data required" });
 
     if (!sessionId) sessionId = uuidv4();
-    
+
     const userInfo = getUserInfo(req);
 
     const newEvent = new Event({
@@ -146,6 +146,16 @@ router.get("/session-stats", async (req, res) => {
     res.json({ sessionStats });
   } catch (error) {
     res.status(500).json({ error: "Failed to retrieve session stats" });
+  }
+});
+
+// ✅ Retrieve Latest Events for Frontend Dashboard
+router.get("/latest-events", async (req, res) => {
+  try {
+    const events = await Event.find().sort({ timestamp: -1 }).limit(10);
+    res.json({ events });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch latest events" });
   }
 });
 
